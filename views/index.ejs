@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fake ESP32 Camera</title>
+  <style>
+    body { text-align: center; font-family: Arial; }
+    video { width: 90%; max-width: 400px; }
+    button { padding: 10px 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Fake ESP32 Camera Uploader</h2>
+
+<input type="text" id="cameraId" value="cam1" />
+<br><br>
+
+<video id="video" autoplay playsinline></video>
+<br><br>
+
+<button onclick="startStreaming()">Start Streaming</button>
+
+<script>
+let video = document.getElementById("video");
+let canvas = document.createElement("canvas");
+let context = canvas.getContext("2d");
+let interval;
+
+async function startStreaming() {
+  const cameraId = document.getElementById("cameraId").value;
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+    audio: false
+  });
+
+  video.srcObject = stream;
+
+  video.addEventListener("loadedmetadata", () => {
+    interval = setInterval(() => {
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      context.drawImage(video, 0, 0);
+
+      const base64 = canvas
+        .toDataURL("image/jpeg", 0.6)
+        .split(",")[1];
+
+      fetch(`/upload/${cameraId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ frame: base64 })
+      });
+
+    }, 100); // 10 FPS
+  });
+}
+</script>
+
+</body>
+</html>

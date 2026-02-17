@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Camera Viewer</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+
+<h2>Live Viewer</h2>
+
+<input type="text" id="cameraId" value="mobileCam1" />
+<button onclick="connectViewer()">Connect</button>
+<br><br>
+
+<img id="viewer" width="400" />
+
+<script>
+const socket = io();
+
+function connectViewer() {
+  const cameraId = document.getElementById("cameraId").value;
+
+  socket.on(`video-${cameraId}`, (data) => {
+    document.getElementById("viewer").src =
+      "data:image/jpeg;base64," + data;
+  });
+}
+</script>
+
+</body>
+</html>
