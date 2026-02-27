@@ -21,6 +21,7 @@ const io = new Server(server, {
 // Store latest frame in memory
 let latestFrames = {};   // { cameraId: Buffer }
 let cameras = {};        // { cameraId: true }
+let frameTimestamps = {}; // { cameraId: ISO string }
 
 // ===============================
 // 1️⃣ ESP32 uploads frames here
@@ -37,6 +38,7 @@ app.post("/upload/:cameraId", (req, res) => {
 
   latestFrames[cameraId] = buffer;
   cameras[cameraId] = true;
+  frameTimestamps[cameraId] = new Date().toISOString();
 
   // Notify dashboard that camera exists
   io.emit("camera-list", Object.keys(cameras));
@@ -106,6 +108,18 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
+});
+
+// ===============================
+// 5️⃣ Frame Timestamp
+// ===============================
+app.get("/timestamp/:cameraId", (req, res) => {
+  const cameraId = req.params.cameraId;
+  const ts = frameTimestamps[cameraId];
+  if (!ts) {
+    return res.status(404).json({ error: "No frame yet" });
+  }
+  res.json({ cameraId, timestamp: ts });
 });
 
 app.get('/', (req,res)=>{
