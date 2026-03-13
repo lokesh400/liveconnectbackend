@@ -126,6 +126,31 @@ app.get('/', (req,res)=>{
     res.render("index")
 })
 
+//////// move servos////////////
+// POST /move/:cameraId
+// Body: { direction: "left" | "right" | "up" | "down" }
+app.post('/move/:cameraId', express.json(), (req, res) => {
+  const { cameraId } = req.params;
+  const { direction } = req.body;
+
+  const servoAngles = {
+    left:  { x:  20, y:  90 },
+    right: { x: 160, y:  90 },
+    up:    { x:  90, y:  20 },
+    down:  { x:  90, y: 160 },
+  };
+
+  const angles = servoAngles[direction];
+  if (!angles) {
+    return res.status(400).json({ error: 'Invalid direction' });
+  }
+
+  // TODO: send angles.x and angles.y to your servo/hardware for cameraId
+  console.log(`[${cameraId}] Move ${direction} → x=${angles.x} y=${angles.y}`);
+
+  res.json({ ok: true, cameraId, direction, ...angles });
+});
+
 // ===============================
 server.listen(3000, "0.0.0.0", () => {
   console.log("Server running on port 3000");
