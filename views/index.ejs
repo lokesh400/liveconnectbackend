@@ -18,47 +18,59 @@
 <video id="video" autoplay playsinline></video>
 <br><br>
 
-<button onclick="startStreaming()">Start Streaming</button>
-
 <script>
 let video = document.getElementById("video");
 let canvas = document.createElement("canvas");
 let context = canvas.getContext("2d");
 let interval;
+let streamStarted = false;
 
 async function startStreaming() {
+  if (streamStarted) return;
+
   const cameraId = document.getElementById("cameraId").value;
 
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" },
-    audio: false
-  });
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
 
-  video.srcObject = stream;
+    video.srcObject = stream;
+    streamStarted = true;
 
-  video.addEventListener("loadedmetadata", () => {
-    interval = setInterval(() => {
+    video.addEventListener("loadedmetadata", () => {
+      if (interval) return;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      interval = setInterval(() => {
 
-      context.drawImage(video, 0, 0);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-      const base64 = canvas
-        .toDataURL("image/jpeg", 0.6)
-        .split(",")[1];
+        context.drawImage(video, 0, 0);
 
-      fetch(`/upload/${cameraId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ frame: base64 })
-      });
+        const base64 = canvas
+          .toDataURL("image/jpeg", 0.6)
+          .split(",")[1];
 
-    }, 100); // 10 FPS
-  });
+        fetch(`/upload/${cameraId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ frame: base64 })
+        });
+
+      }, 100); // 10 FPS
+    }, { once: true });
+  } catch (error) {
+    console.error("Camera start failed:", error);
+  }
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  startStreaming();
+});
 </script>
 
 </body>
